@@ -29,6 +29,10 @@ jobs:
           flutter gen-l10n
       - name: Use debug signing
         run: sed -i 's/signingConfigs.release/signingConfigs.debug/; s/getByName("release")/getByName("debug")/' android/app/build.gradle*
+      - name: Change app id
+        run: |
+          sed -i -E 's/(applicationId\s*=?\s*")[^"]+"/\1de.astubenbord.paperless_zh"/' android/app/build.gradle*
+          grep -n applicationId android/app/build.gradle*
       - run: flutter build apk --release
       - uses: actions/upload-artifact@v4
         with:
