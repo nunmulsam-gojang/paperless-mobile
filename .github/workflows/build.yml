@@ -27,13 +27,19 @@ jobs:
           flutter pub get
           dart run build_runner build --delete-conflicting-outputs
           flutter gen-l10n
-      - name: Use debug signing
-        run: sed -i 's/signingConfigs.release/signingConfigs.debug/; s/getByName("release")/getByName("debug")/' android/app/build.gradle*
       - name: Change app id
         run: |
           sed -i -E 's/(applicationId\s*=?\s*")[^"]+"/\1de.astubenbord.paperless_zh"/' android/app/build.gradle*
           grep -n applicationId android/app/build.gradle*
+      - name: Create temporary signing key
+        run: |
+          keytool -genkeypair -v -keystore android/app/upload-keystore.jks -alias zhbuild -keyalg RSA -keysize 2048 -validity 10000 -storepass paperless-zh -keypass paperless-zh -dname "CN=Paperless Chinese Build"
+          printf 'storeFile=upload-keystore.jks\nstorePassword=paperless-zh\nkeyAlias=zhbuild\nkeyPassword=paperless-zh\n' > android/key.properties
       - run: flutter build apk --release
+      - name: Verify APK is signed
+        run: |
+          APKSIGNER=$(ls -d $ANDROID_HOME/build-tools/*/apksigner 2>/dev/null | sort -V | tail -1)
+          if [ -x "$APKSIGNER" ]; then "$APKSIGNER" verify --print-certs build/app/outputs/flutter-apk/app-release.apk; else echo "apksigner not found, skipping check"; fi
       - uses: actions/upload-artifact@v4
         with:
           name: paperless-zh
