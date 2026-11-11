@@ -16,6 +16,28 @@ jobs:
         with:
           flutter-version: 3.35.4
           cache: true
+      - name: Patch language list for Chinese
+        run: |
+          python3 - <<'PYEOF'
+          import re
+          p='lib/features/settings/view/widgets/language_selection_setting.dart'
+          s=open(p,encoding='utf-8').read()
+          if "'zh': LanguageOption" not in s:
+              old="    'it': LanguageOption('Italiano', true),\n"
+              assert old in s
+              s=s.replace(old, old+"    'zh': LanguageOption('简体中文', true),\n")
+          old2="_languageOptions[settings.preferredLocaleSubtag]!.name"
+          if old2 in s:
+              s=s.replace(old2,"(_languageOptions[settings.preferredLocaleSubtag]?.name ?? settings.preferredLocaleSubtag)")
+          open(p,'w',encoding='utf-8').write(s)
+          p='lib/main.dart'
+          s=open(p,encoding='utf-8').read()
+          if "Locale('zh')" not in s:
+              old="                Locale('sl'),\n              ],"
+              assert old in s
+              s=s.replace(old,"                Locale('sl'),\n                Locale('zh'),\n              ],")
+          open(p,'w',encoding='utf-8').write(s)
+          PYEOF
       - name: Generate code
         run: |
           if [ -d packages/paperless_api ]; then
